@@ -1,0 +1,222 @@
+# Portfolio Recommendation - System Context
+
+## Project Overview
+
+A Next.js 15 application that analyses historical asset prices and recommends optimised portfolio weights. Built for the Antarctica Wealth Management take-home assessment.
+
+## Tech Stack
+
+| Category | Technology |
+|----------|-----------|
+| Framework | Next.js 15 (App Router, Server Components, Streaming SSR) |
+| Language | TypeScript 5 (strict mode, ES2017 target) |
+| UI | React 19, inline styles |
+| Charts | Recharts |
+| Testing | Jest + React Testing Library |
+| Linting | ESLint + typescript-eslint |
+| CI/CD | GitHub Actions → Vercel |
+
+## Architecture
+
+### Directory Structure
+
+```
+├── app/                    # Next.js App Router
+│   ├── page.tsx            # Main dashboard (streaming SSR)
+│   ├── layout.tsx          # Root layout with preconnect
+│   ├── loading.tsx         # Global skeleton loading UI
+│   └── globals.css         # Global styles + shimmer animation
+├── components/             # React components
+│   ├── PortfolioData.tsx   # Data fetching (Server Component)
+│   ├── MetricCard.tsx      # KPI display
+│   ├── HistoricalPerformance.tsx  # Interactive chart
+│   ├── WeightRecommendation.tsx   # Weight allocation table
+│   ├── HoldingsDetail.tsx  # Asset detail table
+│   ├── ConstraintChecks.tsx  # Constraint progress bars
+│   └── Methodology.tsx     # Documentation
+├── lib/                    # Core logic
+│   ├── types.ts            # TypeScript interfaces
+│   ├── data.ts             # Data fetching + caching + validation
+│   ├── data.test.ts        # Data tests
+│   ├── optimizer.ts        # Portfolio optimisation
+│   └── optimizer.test.ts   # Optimisation tests
+└── styles/                 # CSS files
+```
+
+### Data Flow
+
+```
+S3 JSON → fetchHoldings/fetchPrices/fetchBenchmark/fetchConstraints
+  → In-memory cache (5min TTL)
+  → Type guards validate
+  → optimizePortfolio() computes metrics
+  → Components render
+```
+
+## Coding Conventions
+
+### TypeScript
+
+- **Strict mode enabled** — no implicit `any`, strict null checks
+- **ES2017 target** — modern JavaScript features
+- **Path aliases** — use `@/*` for imports from project root
+- **Type imports** — use `import type` for type-only imports
+- **No explicit `any`** — use `unknown` with type guards instead
+
+```typescript
+// Good
+import type { Holding } from './types';
+function isValidHolding(item: unknown): item is Holding { ... }
+
+// Bad
+import { Holding } from './types';
+const item: any = data;
+```
+
+### React Components
+
+- **Functional components only** — no class components
+- **Default exports** — one component per file, exported as default
+- **Props interfaces** — define `ComponentNameProps` interface
+- **Inline styles** — use style objects, not CSS classes for components
+- **No comments in code** — keep code self-documenting
+
+```typescript
+interface MetricCardProps {
+  label: string;
+  value: string;
+  sublabel: string;
+  variant?: 'default' | 'positive' | 'negative';
+}
+
+export default function MetricCard({ label, value, sublabel, variant = 'default' }: MetricCardProps) {
+  return <div style={styles.card}>{label}</div>;
+}
+
+const styles = {
+  card: { background: '#0f172a', borderRadius: '8px', padding: '16px' },
+};
+```
+
+### Server vs Client Components
+
+- **Server Components (default)** — data fetching, database calls, server-side logic
+- **Client Components** — add `'use client'` directive for hooks, event handlers, browser APIs
+- `PortfolioData.tsx` is a Server Component that fetches data inside a Suspense boundary
+
+### Naming Conventions
+
+| Element | Convention | Example |
+|---------|-----------|---------|
+| Components | PascalCase | `MetricCard`, `HistoricalPerformance` |
+| Functions | camelCase | `fetchHoldings`, `optimizePortfolio` |
+| Types/Interfaces | PascalCase | `Holding`, `AssetMetrics` |
+| Variables | camelCase | `dataCache`, `BASE_URL` |
+| Constants | UPPER_SNAKE_CASE | `BASE_URL`, `CACHE_TTL_MS` |
+| Files | camelCase or PascalCase | `data.ts`, `MetricCard.tsx` |
+| Tests | `*.test.ts` | `data.test.ts`, `optimizer.test.ts` |
+
+### Data Fetching
+
+- **In-memory caching** — 5-minute TTL via `resetCache()` for tests
+- **Safe fetch** — always use `safeFetch<T>()` with fallback values
+- **Type guards** — validate all external data at runtime
+- **Console warnings** — log issues with `[data]` prefix for filtering
+
+```typescript
+export async function fetchHoldings(): Promise<Holding[]> {
+  if (isCacheValid() && dataCache.holdings !== null) return dataCache.holdings;
+
+  const fallback: Holding[] = [];
+  const data = await safeFetch<unknown[]>(`${BASE_URL}/holdings.json`, fallback);
+  if (!Array.isArray(data)) {
+    console.warn('[data] Holdings data is not an array, returning empty');
+    return fallback;
+  }
+  const valid = data.filter(isValidHolding);
+  dataCache.holdings = valid;
+  dataCache.timestamp = Date.now();
+  return valid;
+}
+```
+
+### Error Handling
+
+- **Graceful degradation** — always provide fallback values
+- **Type validation** — filter invalid items, don't throw
+- **Console warnings** — log issues for debugging, don't break UI
+- **Default constraints** — use sensible defaults when data is missing
+
+| Scenario | Fallback |
+|----------|----------|
+| Holdings fetch fails | Empty array `[]` |
+| Prices fetch fails | Empty array `[]` |
+| Benchmark fetch fails | Empty array `[]` |
+| Constraints fetch fails | `{ min_weight: 0.02, max_weight: 0.25, per_asset_class_caps: {}, max_assets: 5 }` |
+
+### Testing
+
+- **Jest** — test runner
+- **React Testing Library** — component testing
+- **Coverage target** — maintain 95%+ coverage minimum
+- **New code requires tests** — all new code changes MUST include corresponding unit tests
+- **Coverage enforcement** — ensure unit test coverage stays above 80% for all new modifications
+- **Cache reset** — call `resetCache()` in `beforeEach` for data tests
+- **Mock fetch** — use `jest.fn()` for `global.fetch`
+
+```typescript
+beforeEach(() => {
+  resetCache();
+  global.fetch = jest.fn();
+});
+
+afterEach(() => {
+  jest.resetAllMocks();
+});
+```
+
+### Styling
+
+- **Inline styles** — component-level style objects
+- **CSS variables** — in `globals.css` for global theme values
+- **Dark theme** — primary background `#0f172a`, borders `#1e293b`
+- **Accent colors** — green `#22c55e` (positive), red `#ef4444` (negative)
+- **Shimmer animation** — for skeleton loading states
+
+### Git Workflow
+
+- **Branch** — `main` for production
+- **Commits** — descriptive messages, conventional format
+- **CI** — runs tests on every push
+- **Deploy** — automatic to Vercel on `main` push
+- **No secrets** — never commit API keys or credentials
+- **NO AUTO-COMMITS** — AI must NEVER automatically commit code changes. All commits must be explicitly requested and approved by the user. AI should only prepare changes and wait for user confirmation before any git operations.
+
+### Performance
+
+- **Streaming SSR** — Suspense boundaries for async content
+- **Skeleton UI** — shimmer placeholders during loading
+- **Preconnect** — to S3 domain in `<head>`
+- **Keep-alive** — connection reuse for fetch requests
+- **Promise.all** — parallel data fetching
+
+## Commands
+
+```bash
+npm run dev          # Start dev server with debugger
+npm run build        # Production build
+npm start            # Start production server
+npm test             # Run tests
+npm run test:watch   # Watch mode
+npm run test:coverage # Coverage report
+npm run lint         # ESLint
+```
+
+## Debugging
+
+Use VS Code debug configurations:
+1. **Next.js: Debug Server** — launch with debugger attached
+2. **Next.js: Debug Client (Chrome)** — browser debugging
+3. **Next.js: Attach to Server** — attach to running server
+
+Set breakpoints in `.tsx`/`.ts` files and press F5.

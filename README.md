@@ -13,7 +13,7 @@ This tool ingests daily price data for a set of assets, computes risk-adjusted p
 - **In-Memory Caching** — 5-minute cache for S3 data to eliminate redundant fetches
 - **Robust Error Handling** — Graceful fallbacks for missing, corrupted, or invalid data
 - **Interactive Charts** — Click legend items to show/hide assets in the performance chart
-- **Comprehensive Testing** — 99 tests with 99.5% coverage
+- **Comprehensive Testing** — Unit tests with 95%+ coverage target
 
 ## Optimisation Methodology
 
@@ -182,6 +182,18 @@ All incoming data passes through type guards that filter out:
 | Prices | Zero/negative prices, missing fields, NaN values, null items |
 | Benchmark | Zero/negative/NaN levels, missing dates, null items |
 | Constraints | min > max, negative values, zero max_assets, invalid caps |
+
+## Professional Skills
+
+This project includes domain-specific skills that provide institutional-grade portfolio management capabilities:
+
+| Skill | Description |
+|---|---|
+| **portfolio-optimizer** | Mean-variance optimization, efficient frontier analysis, Sharpe ratio maximization |
+| **risk-analyzer** | VaR/CVaR calculations, stress testing, drawdown analysis, risk decomposition |
+| **asset-allocator** | Strategic/tactical asset allocation, investor profiling, capital market assumptions |
+| **performance-attribution** | Brinson attribution, factor analysis, benchmark-relative performance metrics |
+| **rebalancing-advisor** | Allocation drift analysis, tax-efficient rebalancing, trade execution guidance |
 
 ## Tech Stack
 
