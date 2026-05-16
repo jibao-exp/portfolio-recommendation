@@ -3,7 +3,7 @@ import type { Holding, PricePoint, BenchmarkPoint, Constraints, AssetMetrics, Po
 const TRADING_DAYS_PER_YEAR = 252;
 const RISK_FREE_RATE = 0.04;
 
-function normalizeAssetClass(assetClass: string): string {
+export function normalizeAssetClass(assetClass: string): string {
   const normalized = assetClass.toLowerCase().replace(/[\s-]/g, '');
   if (normalized === 'equity') return 'Equity';
   if (normalized === 'fixedincome' || normalized === 'fi') return 'Fixed Income';
@@ -11,7 +11,7 @@ function normalizeAssetClass(assetClass: string): string {
   return assetClass.charAt(0).toUpperCase() + assetClass.slice(1);
 }
 
-function groupPricesByIsin(prices: PricePoint[]): Map<string, { date: string; price: number }[]> {
+export function groupPricesByIsin(prices: PricePoint[]): Map<string, { date: string; price: number }[]> {
   const grouped = new Map<string, { date: string; price: number }[]>();
   for (const p of prices) {
     if (!grouped.has(p.isin)) grouped.set(p.isin, []);
@@ -23,7 +23,7 @@ function groupPricesByIsin(prices: PricePoint[]): Map<string, { date: string; pr
   return grouped;
 }
 
-function calculateReturns(priceHistory: { date: string; price: number }[]): number[] {
+export function calculateReturns(priceHistory: { date: string; price: number }[]): number[] {
   const returns: number[] = [];
   for (let i = 1; i < priceHistory.length; i++) {
     const ret = (priceHistory[i].price - priceHistory[i - 1].price) / priceHistory[i - 1].price;
@@ -32,13 +32,13 @@ function calculateReturns(priceHistory: { date: string; price: number }[]): numb
   return returns;
 }
 
-function annualizedReturn(dailyReturns: number[]): number {
+export function annualizedReturn(dailyReturns: number[]): number {
   if (dailyReturns.length === 0) return 0;
   const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
   return mean * TRADING_DAYS_PER_YEAR;
 }
 
-function annualizedVolatility(dailyReturns: number[]): number {
+export function annualizedVolatility(dailyReturns: number[]): number {
   if (dailyReturns.length < 2) return 0;
   const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
   const variance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (dailyReturns.length - 1);
