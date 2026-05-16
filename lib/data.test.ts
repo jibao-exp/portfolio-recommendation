@@ -28,13 +28,35 @@ describe('fetchHoldings', () => {
     expect(result).toEqual(mockHoldings);
   });
 
-  it('throws on non-ok response', async () => {
+  it('returns empty array on non-ok response', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
+      status: 404,
       statusText: 'Not Found',
     });
 
-    await expect(fetchHoldings()).rejects.toThrow('Failed to fetch holdings: Not Found');
+    const result = await fetchHoldings();
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array on network error', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+    const result = await fetchHoldings();
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array when response is not an array', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ key: 'value' }),
+    });
+
+    const result = await fetchHoldings();
+
+    expect(result).toEqual([]);
   });
 });
 
@@ -79,13 +101,50 @@ describe('fetchPrices', () => {
     expect(result[0].price).toBe(85.0);
   });
 
-  it('throws on non-ok response', async () => {
+  it('filters out NaN prices', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { date: '2023-04-05', isin: 'A001', price: 'not-a-number' },
+        { date: '2023-04-06', isin: 'A001', price: 100 },
+      ],
+    });
+
+    const result = await fetchPrices();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].price).toBe(100);
+  });
+
+  it('returns empty array when prices response is not an array', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ key: 'value' }),
+    });
+
+    const result = await fetchPrices();
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array on non-ok response', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
+      status: 503,
       statusText: 'Service Unavailable',
     });
 
-    await expect(fetchPrices()).rejects.toThrow('Failed to fetch prices: Service Unavailable');
+    const result = await fetchPrices();
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array on network error', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+    const result = await fetchPrices();
+
+    expect(result).toEqual([]);
   });
 });
 
@@ -117,13 +176,35 @@ describe('fetchBenchmark', () => {
     expect(result).toEqual(mockBenchmark);
   });
 
-  it('throws on non-ok response', async () => {
+  it('returns empty array on non-ok response', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
+      status: 500,
       statusText: 'Internal Server Error',
     });
 
-    await expect(fetchBenchmark()).rejects.toThrow('Failed to fetch benchmark: Internal Server Error');
+    const result = await fetchBenchmark();
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array when benchmark response is not an array', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ key: 'value' }),
+    });
+
+    const result = await fetchBenchmark();
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array on network error', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+    const result = await fetchBenchmark();
+
+    expect(result).toEqual([]);
   });
 });
 
@@ -132,6 +213,13 @@ describe('fetchConstraints', () => {
     min_weight: 0.02,
     max_weight: 0.25,
     per_asset_class_caps: { Equity: 0.3, 'Fixed Income': 0.3, Alternatives: 0.3 },
+    max_assets: 5,
+  };
+
+  const defaultConstraints = {
+    min_weight: 0.02,
+    max_weight: 0.25,
+    per_asset_class_caps: {},
     max_assets: 5,
   };
 
@@ -155,12 +243,47 @@ describe('fetchConstraints', () => {
     expect(result).toEqual(mockConstraints);
   });
 
-  it('throws on non-ok response', async () => {
+  it('returns defaults on non-ok response', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
+      status: 408,
       statusText: 'Timeout',
     });
 
-    await expect(fetchConstraints()).rejects.toThrow('Failed to fetch constraints: Timeout');
+    const result = await fetchConstraints();
+
+    expect(result).toEqual(defaultConstraints);
+  });
+
+  it('returns defaults on network error', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+    const result = await fetchConstraints();
+
+    expect(result).toEqual(defaultConstraints);
+  });
+
+  it('returns defaults when response is not an object', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => 'not an object',
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result).toEqual(defaultConstraints);
+  });
+
+  it('fills missing fields with defaults', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ min_weight: 0.05 }),
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result.min_weight).toBe(0.05);
+    expect(result.max_weight).toBe(0.25);
+    expect(result.max_assets).toBe(5);
   });
 });

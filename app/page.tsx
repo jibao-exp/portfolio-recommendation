@@ -100,9 +100,9 @@ const styles = {
     padding: '24px 32px',
   },
   header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    display: 'grid',
+    gridTemplateColumns: '1fr auto 1fr',
+    alignItems: 'center',
     marginBottom: '24px',
     paddingBottom: '20px',
     borderBottom: '1px solid #1e293b',
