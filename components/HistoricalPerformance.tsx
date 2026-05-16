@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { AssetMetrics } from '@/lib/types';
 import {
   LineChart,
@@ -17,21 +18,60 @@ interface HistoricalPerformanceProps {
 }
 
 export default function HistoricalPerformance({ assets, benchmark }: HistoricalPerformanceProps) {
+  const [visibleAssets, setVisibleAssets] = useState<Set<string>>(
+    () => new Set(assets.slice(0, 4).map(a => a.isin))
+  );
+  const [showBenchmark, setShowBenchmark] = useState(true);
+
   const chartData = buildChartData(assets, benchmark);
+
+  const toggleAsset = (isin: string) => {
+    setVisibleAssets(prev => {
+      const next = new Set(prev);
+      if (next.has(isin)) {
+        next.delete(isin);
+      } else {
+        next.add(isin);
+      }
+      return next;
+    });
+  };
+
+  const toggleBenchmark = () => {
+    setShowBenchmark(prev => !prev);
+  };
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
         <h3 style={styles.title}>Historical Performance</h3>
         <div style={styles.legend}>
-          {assets.slice(0, 4).map((asset, i) => (
-            <span key={asset.isin} style={styles.legendItem}>
-              <span style={{ ...styles.dot, background: COLORS[i % COLORS.length] }}></span>
-              {asset.name}
-            </span>
-          ))}
-          <span style={styles.legendItem}>
-            <span style={{ ...styles.dot, background: '#64748b' }}></span>
+          {assets.slice(0, 4).map((asset, i) => {
+            const isVisible = visibleAssets.has(asset.isin);
+            return (
+              <span
+                key={asset.isin}
+                style={{
+                  ...styles.legendItem,
+                  opacity: isVisible ? 1 : 0.4,
+                  cursor: 'pointer',
+                }}
+                onClick={() => toggleAsset(asset.isin)}
+              >
+                <span style={{ ...styles.dot, background: COLORS[i % COLORS.length], opacity: isVisible ? 1 : 0.3 }}></span>
+                {asset.name}
+              </span>
+            );
+          })}
+          <span
+            style={{
+              ...styles.legendItem,
+              opacity: showBenchmark ? 1 : 0.4,
+              cursor: 'pointer',
+            }}
+            onClick={toggleBenchmark}
+          >
+            <span style={{ ...styles.dot, background: '#64748b', opacity: showBenchmark ? 1 : 0.3 }}></span>
             Benchmark
           </span>
         </div>
@@ -54,7 +94,11 @@ export default function HistoricalPerformance({ assets, benchmark }: HistoricalP
           />
           <Tooltip
             contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#e2e8f0' }}
-            formatter={(value: number) => [`${(value * 100).toFixed(2)}%`, '']}
+            formatter={(value: number, name: string) => {
+              if (name === 'benchmark') return [`${(value * 100).toFixed(2)}%`, 'Benchmark'];
+              const asset = assets.find(a => a.isin === name);
+              return [`${(value * 100).toFixed(2)}%`, asset?.name || name];
+            }}
             labelFormatter={(label) => new Date(label).toLocaleDateString()}
           />
           {assets.slice(0, 4).map((asset, i) => (
@@ -65,6 +109,7 @@ export default function HistoricalPerformance({ assets, benchmark }: HistoricalP
               stroke={COLORS[i % COLORS.length]}
               dot={false}
               strokeWidth={1.5}
+              hide={!visibleAssets.has(asset.isin)}
             />
           ))}
           <Line
@@ -74,6 +119,7 @@ export default function HistoricalPerformance({ assets, benchmark }: HistoricalP
             dot={false}
             strokeWidth={1}
             strokeDasharray="4 4"
+            hide={!showBenchmark}
           />
         </LineChart>
       </ResponsiveContainer>

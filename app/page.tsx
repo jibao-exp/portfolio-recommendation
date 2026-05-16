@@ -32,10 +32,6 @@ export default async function Home() {
             <h1 style={styles.h1}>Portfolio Optimiser</h1>
             <div style={styles.subtitle}>Q1 2026 REBALANCE — 90-DAY PRICE HISTORY ANALYSIS</div>
           </div>
-          <div style={styles.headerDate}>
-            <div style={styles.dateLabel}>GENERATED</div>
-            <div style={styles.dateValue}>8 Mar 2026</div>
-          </div>
         </header>
 
         <section style={styles.metricsRow}>
@@ -71,8 +67,11 @@ export default async function Home() {
           />
         </section>
 
-        <section style={styles.chartsRow}>
+        <section style={styles.chartSection}>
           <HistoricalPerformance assets={assetMetrics} benchmark={benchmark} />
+        </section>
+
+        <section style={styles.weightSection}>
           <WeightRecommendation assets={assetMetrics} />
         </section>
 
@@ -134,29 +133,16 @@ const styles = {
     color: '#475569',
     letterSpacing: '0.05em',
   },
-  headerDate: {
-    textAlign: 'right' as const,
-  },
-  dateLabel: {
-    fontSize: '10px',
-    color: '#475569',
-    letterSpacing: '0.1em',
-  },
-  dateValue: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    marginTop: '2px',
-  },
   metricsRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
     gap: '12px',
     marginBottom: '16px',
   },
-  chartsRow: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr',
-    gap: '12px',
+  chartSection: {
+    marginBottom: '16px',
+  },
+  weightSection: {
     marginBottom: '16px',
   },
   tableSection: {
