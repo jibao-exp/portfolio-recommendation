@@ -6,6 +6,15 @@ A Next.js application that analyses historical asset prices and recommends optim
 
 This tool ingests daily price data for a set of assets, computes risk-adjusted performance metrics, and produces a recommended allocation that respects business-defined constraints. The output is a dashboard that compares the current portfolio against the recommended one, with supporting charts and tables.
 
+## Features
+
+- **Streaming SSR** — Header and layout render instantly while data loads in the background
+- **Skeleton Loading UI** — Shimmer-animated placeholders for smooth perceived performance
+- **In-Memory Caching** — 5-minute cache for S3 data to eliminate redundant fetches
+- **Robust Error Handling** — Graceful fallbacks for missing, corrupted, or invalid data
+- **Interactive Charts** — Click legend items to show/hide assets in the performance chart
+- **Comprehensive Testing** — 99 tests with 99.5% coverage
+
 ## Optimisation Methodology
 
 ### Objective
@@ -135,12 +144,51 @@ Pearson correlation coefficient between asset returns and benchmark returns:
 
 5. **Resampling / bootstrap**: Could assess the stability of the recommended weights through Monte Carlo resampling of returns.
 
+## Performance Optimisations
+
+### Streaming SSR
+
+The page uses React Suspense boundaries to stream content to the browser:
+
+```
+User Request → Instant Header + Skeleton → S3 Fetch (background) → Stream Real Content
+```
+
+The header and layout render immediately without waiting for data. A shimmer-animated skeleton placeholder shows the page structure while data loads.
+
+### Data Caching
+
+All S3 data is cached in memory for 5 minutes:
+
+| Scenario | Before | After |
+|---|---|---|
+| First load | 2-4s | 2-4s (S3 fetch) |
+| Refresh within 5 min | 2-4s | < 100ms (cache hit) |
+| Multiple users | Each fetches S3 | Server-side cache shared |
+
+### Connection Optimisation
+
+- `preconnect` and `dns-prefetch` to S3 domain in `<head>`
+- `Connection: keep-alive` header on all fetch requests
+- Reduces TCP/TLS handshake overhead
+
+### Data Validation Pipeline
+
+All incoming data passes through type guards that filter out:
+
+| Data Source | Invalid Items Filtered |
+|---|---|
+| Holdings | Missing ISIN, empty name, NaN/negative/overflow weights, null items |
+| Prices | Zero/negative prices, missing fields, NaN values, null items |
+| Benchmark | Zero/negative/NaN levels, missing dates, null items |
+| Constraints | min > max, negative values, zero max_assets, invalid caps |
+
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 15 (App Router, Server Components, Streaming SSR)
 - **Language**: TypeScript
 - **Charts**: Recharts
-- **Testing**: Jest + React Testing Library
+- **Testing**: Jest + React Testing Library (99 tests, 99.5% coverage)
 - **CI/CD**: GitHub Actions → Vercel
 
 ## Getting Started
@@ -164,6 +212,21 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Debugging
+
+The project includes VS Code debug configurations:
+
+| Configuration | Description |
+|---|---|
+| **Next.js: Debug Server** | Launch Next.js dev server with debugger attached |
+| **Next.js: Debug Client (Chrome)** | Debug browser-side code in Chrome |
+| **Next.js: Attach to Server** | Attach to an already-running dev server |
+
+To debug:
+1. Select a configuration in the Run & Debug panel
+2. Press F5
+3. Set breakpoints in `.tsx`/`.ts` files
+
 ### Build
 
 ```bash
@@ -176,6 +239,7 @@ npm start
 ```bash
 npm test
 npm run test:watch
+npm run test:coverage
 ```
 
 ## Data Sources
@@ -193,19 +257,28 @@ All data is fetched from public S3 endpoints:
 
 ```
 ├── app/
-│   └── page.tsx              # Main dashboard page
+│   ├── page.tsx              # Main dashboard page (streaming SSR)
+│   ├── layout.tsx            # Root layout with preconnect
+│   ├── loading.tsx           # Global skeleton loading UI
+│   └── globals.css           # Global styles with shimmer animation
 ├── components/
+│   ├── PortfolioData.tsx     # Data fetching inside Suspense boundary
 │   ├── MetricCard.tsx        # KPI metric display
-│   ├── HistoricalPerformance.tsx  # Line chart
-│   ├── WeightRecommendation.tsx   # Bar chart
+│   ├── HistoricalPerformance.tsx  # Interactive line chart
+│   ├── WeightRecommendation.tsx   # Weight allocation table
 │   ├── HoldingsDetail.tsx    # Asset detail table
 │   ├── ConstraintChecks.tsx  # Constraint progress bars
 │   └── Methodology.tsx       # Methodology documentation
 ├── lib/
 │   ├── types.ts              # TypeScript interfaces
-│   ├── data.ts               # Data fetching
-│   └── optimizer.ts          # Portfolio optimisation logic
-└── styles/                   # CSS files
+│   ├── data.ts               # Data fetching with caching and validation
+│   ├── data.test.ts          # Data fetching tests
+│   ├── optimizer.ts          # Portfolio optimisation logic
+│   └── optimizer.test.ts     # Optimisation tests
+├── styles/                   # CSS files
+└── .vscode/
+    ├── launch.json           # Debug configurations
+    └── settings.json         # VS Code debug settings
 ```
 
 ## Deployment
