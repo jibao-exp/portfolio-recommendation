@@ -18,7 +18,7 @@ function groupPricesByIsin(prices: PricePoint[]): Map<string, { date: string; pr
     grouped.get(p.isin)!.push({ date: p.date, price: p.price });
   }
   for (const [, arr] of grouped) {
-    arr.sort((a, b) => a.date.localeCompare(b.date));
+    arr.sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }
   return grouped;
 }

@@ -1,7 +1,7 @@
 import type { Holding, PricePoint, BenchmarkPoint, Constraints } from './types';
 
 const BASE_URL = 'https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com/portfolio-optimisation/2026-04';
-const BENCHMARK_URL = 'https://antarctica-hiring-data.s3.eu-east-1.amazonaws.com/portfolio-optimisation/2026-04/benchmark.json';
+const BENCHMARK_URL = 'https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com/portfolio-optimisation/2026-04/benchmark.json';
 
 export async function fetchHoldings(): Promise<Holding[]> {
   const res = await fetch(`${BASE_URL}/holdings.json`);

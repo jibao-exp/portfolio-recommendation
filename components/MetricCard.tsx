@@ -1,50 +1,43 @@
 interface MetricCardProps {
-  title: string;
-  value: number;
-  format?: 'percent' | 'ratio' | 'decimal';
-  prefix?: string;
+  label: string;
+  value: string;
+  sublabel: string;
+  variant?: 'default' | 'positive' | 'negative';
 }
 
-export default function MetricCard({ title, value, format = 'percent', prefix }: MetricCardProps) {
-  const displayValue = () => {
-    if (prefix) return `${prefix}${value.toFixed(2)}`;
-    switch (format) {
-      case 'percent':
-        return `${(value * 100).toFixed(2)}%`;
-      case 'ratio':
-        return value.toFixed(2);
-      case 'decimal':
-        return value.toFixed(4);
-      default:
-        return value.toFixed(2);
-    }
-  };
+export default function MetricCard({ label, value, sublabel, variant = 'default' }: MetricCardProps) {
+  const valueColor = variant === 'positive' ? '#22c55e' : variant === 'negative' ? '#ef4444' : '#e2e8f0';
 
   return (
     <div style={styles.card}>
-      <div style={styles.title}>{title}</div>
-      <div style={styles.value}>{displayValue()}</div>
+      <div style={styles.label}>{label}</div>
+      <div style={{ ...styles.value, color: valueColor }}>{value}</div>
+      <div style={styles.sublabel}>{sublabel}</div>
     </div>
   );
 }
 
 const styles = {
   card: {
-    background: 'white',
-    borderRadius: '12px',
-    padding: '20px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e2e8f0',
+    background: '#0f172a',
+    borderRadius: '8px',
+    padding: '16px',
+    border: '1px solid #1e293b',
   },
-  title: {
-    fontSize: '14px',
-    color: '#64748b',
+  label: {
+    fontSize: '10px',
+    color: '#475569',
+    letterSpacing: '0.1em',
     marginBottom: '8px',
-    fontWeight: 500,
   },
   value: {
-    fontSize: '28px',
+    fontSize: '24px',
     fontWeight: 700,
-    color: '#1e293b',
+    lineHeight: 1,
+    marginBottom: '4px',
+  },
+  sublabel: {
+    fontSize: '11px',
+    color: '#475569',
   },
 };
