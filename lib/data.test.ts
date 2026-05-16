@@ -58,6 +58,111 @@ describe('fetchHoldings', () => {
 
     expect(result).toEqual([]);
   });
+
+  it('filters out holdings with missing isin', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.2 },
+        { isin: 'B001', name: 'Asset B', asset_class: 'Fixed Income', currency: 'USD', weight: 0.3 },
+      ],
+    });
+
+    const result = await fetchHoldings();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].isin).toBe('B001');
+  });
+
+  it('filters out holdings with empty isin', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { isin: '', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.2 },
+        { isin: 'B001', name: 'Asset B', asset_class: 'Fixed Income', currency: 'USD', weight: 0.3 },
+      ],
+    });
+
+    const result = await fetchHoldings();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].isin).toBe('B001');
+  });
+
+  it('filters out holdings with NaN weight', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: NaN },
+        { isin: 'B001', name: 'Asset B', asset_class: 'Fixed Income', currency: 'USD', weight: 0.3 },
+      ],
+    });
+
+    const result = await fetchHoldings();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].isin).toBe('B001');
+  });
+
+  it('filters out holdings with negative weight', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: -0.1 },
+        { isin: 'B001', name: 'Asset B', asset_class: 'Fixed Income', currency: 'USD', weight: 0.3 },
+      ],
+    });
+
+    const result = await fetchHoldings();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].isin).toBe('B001');
+  });
+
+  it('filters out holdings with weight greater than 1', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 1.5 },
+        { isin: 'B001', name: 'Asset B', asset_class: 'Fixed Income', currency: 'USD', weight: 0.3 },
+      ],
+    });
+
+    const result = await fetchHoldings();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].isin).toBe('B001');
+  });
+
+  it('filters out holdings with missing name', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { isin: 'A001', asset_class: 'Equity', currency: 'USD', weight: 0.2 },
+        { isin: 'B001', name: 'Asset B', asset_class: 'Fixed Income', currency: 'USD', weight: 0.3 },
+      ],
+    });
+
+    const result = await fetchHoldings();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].isin).toBe('B001');
+  });
+
+  it('filters out null items in holdings array', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        null,
+        { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.2 },
+        undefined,
+      ],
+    });
+
+    const result = await fetchHoldings();
+
+    expect(result).toHaveLength(1);
+  });
 });
 
 describe('fetchPrices', () => {
@@ -146,6 +251,78 @@ describe('fetchPrices', () => {
 
     expect(result).toEqual([]);
   });
+
+  it('filters out prices with zero price', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { date: '2023-04-05', isin: 'A001', price: 0 },
+        { date: '2023-04-06', isin: 'A001', price: 100 },
+      ],
+    });
+
+    const result = await fetchPrices();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].price).toBe(100);
+  });
+
+  it('filters out prices with negative price', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { date: '2023-04-05', isin: 'A001', price: -10 },
+        { date: '2023-04-06', isin: 'A001', price: 100 },
+      ],
+    });
+
+    const result = await fetchPrices();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].price).toBe(100);
+  });
+
+  it('filters out prices with missing isin', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { date: '2023-04-05', price: 100 },
+        { date: '2023-04-06', isin: 'A001', price: 100 },
+      ],
+    });
+
+    const result = await fetchPrices();
+
+    expect(result).toHaveLength(1);
+  });
+
+  it('filters out prices with missing date', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { isin: 'A001', price: 100 },
+        { date: '2023-04-06', isin: 'A001', price: 100 },
+      ],
+    });
+
+    const result = await fetchPrices();
+
+    expect(result).toHaveLength(1);
+  });
+
+  it('filters out null items in prices array', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        null,
+        { date: '2023-04-05', isin: 'A001', price: 100 },
+      ],
+    });
+
+    const result = await fetchPrices();
+
+    expect(result).toHaveLength(1);
+  });
 });
 
 describe('fetchBenchmark', () => {
@@ -205,6 +382,79 @@ describe('fetchBenchmark', () => {
     const result = await fetchBenchmark();
 
     expect(result).toEqual([]);
+  });
+
+  it('filters out benchmark points with zero level', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { date: '2023-04-05', level: 0 },
+        { date: '2023-04-06', level: 1000 },
+      ],
+    });
+
+    const result = await fetchBenchmark();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].level).toBe(1000);
+  });
+
+  it('filters out benchmark points with negative level', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { date: '2023-04-05', level: -100 },
+        { date: '2023-04-06', level: 1000 },
+      ],
+    });
+
+    const result = await fetchBenchmark();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].level).toBe(1000);
+  });
+
+  it('filters out benchmark points with NaN level', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { date: '2023-04-05', level: NaN },
+        { date: '2023-04-06', level: 1000 },
+      ],
+    });
+
+    const result = await fetchBenchmark();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].level).toBe(1000);
+  });
+
+  it('filters out benchmark points with missing date', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { level: 1000 },
+        { date: '2023-04-06', level: 1000 },
+      ],
+    });
+
+    const result = await fetchBenchmark();
+
+    expect(result).toHaveLength(1);
+  });
+
+  it('filters out null items in benchmark array', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        null,
+        { date: '2023-04-05', level: 1000 },
+      ],
+    });
+
+    const result = await fetchBenchmark();
+
+    expect(result).toHaveLength(1);
   });
 });
 
@@ -285,5 +535,105 @@ describe('fetchConstraints', () => {
     expect(result.min_weight).toBe(0.05);
     expect(result.max_weight).toBe(0.25);
     expect(result.max_assets).toBe(5);
+  });
+
+  it('returns defaults when min_weight is greater than max_weight', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ min_weight: 0.5, max_weight: 0.25 }),
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result).toEqual(defaultConstraints);
+  });
+
+  it('returns defaults when min_weight is negative', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ min_weight: -0.1, max_weight: 0.25 }),
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result.min_weight).toBe(0.02);
+    expect(result.max_weight).toBe(0.25);
+  });
+
+  it('returns defaults when max_weight is zero', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ min_weight: 0.02, max_weight: 0 }),
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result.max_weight).toBe(0.25);
+  });
+
+  it('returns defaults when max_assets is zero', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ max_assets: 0 }),
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result.max_assets).toBe(5);
+  });
+
+  it('returns defaults when max_assets is negative', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ max_assets: -3 }),
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result.max_assets).toBe(5);
+  });
+
+  it('returns defaults when per_asset_class_caps is an array', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ per_asset_class_caps: ['Equity', 'Fixed Income'] }),
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result.per_asset_class_caps).toEqual({});
+  });
+
+  it('returns defaults when per_asset_class_caps is null', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ per_asset_class_caps: null }),
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result.per_asset_class_caps).toEqual({});
+  });
+
+  it('returns defaults when response is an array', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [1, 2, 3],
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result).toEqual(defaultConstraints);
+  });
+
+  it('returns defaults when response is null', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => null,
+    });
+
+    const result = await fetchConstraints();
+
+    expect(result).toEqual(defaultConstraints);
   });
 });

@@ -438,6 +438,160 @@ describe('optimizePortfolio', () => {
 
     expect(equityTotal).toBeLessThanOrEqual(0.3);
   });
+
+  it('handles single price point per asset', () => {
+    const holdings: Holding[] = [
+      { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.5 },
+    ];
+    const prices: PricePoint[] = [
+      { date: '2023-04-01', isin: 'A001', price: 100 },
+    ];
+    const benchmark: BenchmarkPoint[] = [
+      { date: '2023-04-01', level: 1000 },
+    ];
+    const constraints: Constraints = {
+      min_weight: 0.02,
+      max_weight: 0.25,
+      per_asset_class_caps: { Equity: 0.5 },
+      max_assets: 5,
+    };
+
+    const result = optimizePortfolio(holdings, prices, benchmark, constraints);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].annualized_return).toBe(0);
+    expect(result[0].annualized_volatility).toBe(0);
+    expect(result[0].sharpe_ratio).toBe(0);
+    expect(result[0].max_drawdown).toBe(0);
+  });
+
+  it('handles asset with no price data', () => {
+    const holdings: Holding[] = [
+      { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.5 },
+      { isin: 'B001', name: 'Asset B', asset_class: 'Fixed Income', currency: 'USD', weight: 0.5 },
+    ];
+    const prices: PricePoint[] = [
+      { date: '2023-04-01', isin: 'A001', price: 100 },
+      { date: '2023-04-02', isin: 'A001', price: 105 },
+    ];
+    const benchmark: BenchmarkPoint[] = [
+      { date: '2023-04-01', level: 1000 },
+      { date: '2023-04-02', level: 1001 },
+    ];
+    const constraints: Constraints = {
+      min_weight: 0.02,
+      max_weight: 0.25,
+      per_asset_class_caps: { Equity: 0.5, 'Fixed Income': 0.5 },
+      max_assets: 5,
+    };
+
+    const result = optimizePortfolio(holdings, prices, benchmark, constraints);
+
+    expect(result).toHaveLength(2);
+    const assetB = result.find(a => a.isin === 'B001');
+    expect(assetB).toBeDefined();
+    expect(assetB!.annualized_return).toBe(0);
+    expect(assetB!.annualized_volatility).toBe(0);
+  });
+
+  it('handles empty benchmark data', () => {
+    const holdings: Holding[] = [
+      { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.5 },
+    ];
+    const prices: PricePoint[] = [
+      { date: '2023-04-01', isin: 'A001', price: 100 },
+      { date: '2023-04-02', isin: 'A001', price: 105 },
+    ];
+    const benchmark: BenchmarkPoint[] = [];
+    const constraints: Constraints = {
+      min_weight: 0.02,
+      max_weight: 0.25,
+      per_asset_class_caps: { Equity: 0.5 },
+      max_assets: 5,
+    };
+
+    const result = optimizePortfolio(holdings, prices, benchmark, constraints);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].correlation_with_benchmark).toBe(0);
+  });
+
+  it('handles empty price data', () => {
+    const holdings: Holding[] = [
+      { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.5 },
+    ];
+    const prices: PricePoint[] = [];
+    const benchmark: BenchmarkPoint[] = [
+      { date: '2023-04-01', level: 1000 },
+      { date: '2023-04-02', level: 1001 },
+    ];
+    const constraints: Constraints = {
+      min_weight: 0.02,
+      max_weight: 0.25,
+      per_asset_class_caps: { Equity: 0.5 },
+      max_assets: 5,
+    };
+
+    const result = optimizePortfolio(holdings, prices, benchmark, constraints);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].annualized_return).toBe(0);
+    expect(result[0].annualized_volatility).toBe(0);
+    expect(result[0].sharpe_ratio).toBe(0);
+  });
+
+  it('handles constant price data (zero volatility)', () => {
+    const holdings: Holding[] = [
+      { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.5 },
+    ];
+    const prices: PricePoint[] = [
+      { date: '2023-04-01', isin: 'A001', price: 100 },
+      { date: '2023-04-02', isin: 'A001', price: 100 },
+      { date: '2023-04-03', isin: 'A001', price: 100 },
+    ];
+    const benchmark: BenchmarkPoint[] = [
+      { date: '2023-04-01', level: 1000 },
+      { date: '2023-04-02', level: 1001 },
+      { date: '2023-04-03', level: 1002 },
+    ];
+    const constraints: Constraints = {
+      min_weight: 0.02,
+      max_weight: 0.25,
+      per_asset_class_caps: { Equity: 0.5 },
+      max_assets: 5,
+    };
+
+    const result = optimizePortfolio(holdings, prices, benchmark, constraints);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].annualized_return).toBe(0);
+    expect(result[0].annualized_volatility).toBe(0);
+    expect(result[0].sharpe_ratio).toBe(0);
+  });
+
+  it('handles benchmark with single data point', () => {
+    const holdings: Holding[] = [
+      { isin: 'A001', name: 'Asset A', asset_class: 'Equity', currency: 'USD', weight: 0.5 },
+    ];
+    const prices: PricePoint[] = [
+      { date: '2023-04-01', isin: 'A001', price: 100 },
+      { date: '2023-04-02', isin: 'A001', price: 105 },
+    ];
+    const benchmark: BenchmarkPoint[] = [
+      { date: '2023-04-01', level: 1000 },
+    ];
+    const constraints: Constraints = {
+      min_weight: 0.02,
+      max_weight: 0.25,
+      per_asset_class_caps: { Equity: 0.5 },
+      max_assets: 5,
+    };
+
+    const result = optimizePortfolio(holdings, prices, benchmark, constraints);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].correlation_with_benchmark).toBe(0);
+  });
 });
 
 describe('calculatePortfolioMetrics', () => {
