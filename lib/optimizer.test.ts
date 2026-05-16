@@ -8,7 +8,7 @@ import {
   calculatePortfolioMetrics,
   calculateCurrentPortfolioMetrics,
 } from './optimizer';
-import type { Holding, PricePoint, BenchmarkPoint, Constraints } from './types';
+import type { Holding, PricePoint, BenchmarkPoint, Constraints, AssetMetrics } from './types';
 
 describe('normalizeAssetClass', () => {
   it('normalizes "Equity" to "Equity"', () => {
@@ -441,7 +441,7 @@ describe('optimizePortfolio', () => {
 });
 
 describe('calculatePortfolioMetrics', () => {
-  const makeMetrics = (overrides = {}): any => ({
+  const makeMetrics = (overrides: Partial<AssetMetrics> = {}): AssetMetrics => ({
     isin: 'A001',
     name: 'Asset A',
     asset_class: 'Equity',
@@ -511,7 +511,7 @@ describe('calculatePortfolioMetrics', () => {
 });
 
 describe('calculateCurrentPortfolioMetrics', () => {
-  const makeMetrics = (overrides = {}): any => ({
+  const makeMetrics = (overrides: Partial<AssetMetrics> = {}): AssetMetrics => ({
     isin: 'A001',
     name: 'Asset A',
     asset_class: 'Equity',
