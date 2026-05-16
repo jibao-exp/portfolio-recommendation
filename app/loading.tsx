@@ -1,15 +1,4 @@
-import { Suspense } from 'react';
-import MetricCard from '@/components/MetricCard';
-import HistoricalPerformance from '@/components/HistoricalPerformance';
-import WeightRecommendation from '@/components/WeightRecommendation';
-import HoldingsDetail from '@/components/HoldingsDetail';
-import ConstraintChecks from '@/components/ConstraintChecks';
-import Methodology from '@/components/Methodology';
-import PortfolioData from '@/components/PortfolioData';
-
-export const dynamic = 'force-dynamic';
-
-export default function Home() {
+export default function Loading() {
   return (
     <main style={styles.main}>
       <div style={styles.container}>
@@ -19,48 +8,42 @@ export default function Home() {
             <div style={styles.logoSub}>WEALTH MANAGEMENT</div>
           </div>
           <div style={styles.headerRight}>
-            <h1 style={styles.h1}>Portfolio Optimiser</h1>
-            <div style={styles.subtitle}>Q1 2026 REBALANCE — 90-DAY PRICE HISTORY ANALYSIS</div>
+            <div style={styles.titleSkeleton} />
+            <div style={styles.subtitleSkeleton} />
           </div>
         </header>
 
-        <Suspense fallback={<MetricsRowSkeleton />}>
-          <PortfolioData />
-        </Suspense>
+        <section style={styles.metricsRow}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} style={styles.metricCard}>
+              <div style={styles.labelSkeleton} />
+              <div style={styles.valueSkeleton} />
+              <div style={styles.sublabelSkeleton} />
+            </div>
+          ))}
+        </section>
+
+        <section style={styles.chartSection}>
+          <div style={styles.chartTitleSkeleton} />
+          <div style={styles.chartSkeleton} />
+        </section>
+
+        <section style={styles.weightSection}>
+          <div style={styles.chartTitleSkeleton} />
+          <div style={styles.tableSkeleton} />
+        </section>
+
+        <section style={styles.tableSection}>
+          <div style={styles.chartTitleSkeleton} />
+          <div style={styles.tableSkeleton} />
+        </section>
+
+        <section style={styles.bottomRow}>
+          <div style={styles.textSkeleton} />
+          <div style={styles.textSkeleton} />
+        </section>
       </div>
     </main>
-  );
-}
-
-function MetricsRowSkeleton() {
-  return (
-    <>
-      <section style={styles.metricsRow}>
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} style={styles.metricCard}>
-            <div style={styles.labelSkeleton} />
-            <div style={styles.valueSkeleton} />
-            <div style={styles.sublabelSkeleton} />
-          </div>
-        ))}
-      </section>
-      <section style={styles.chartSection}>
-        <div style={styles.chartTitleSkeleton} />
-        <div style={styles.chartSkeleton} />
-      </section>
-      <section style={styles.weightSection}>
-        <div style={styles.chartTitleSkeleton} />
-        <div style={styles.tableSkeleton} />
-      </section>
-      <section style={styles.tableSection}>
-        <div style={styles.chartTitleSkeleton} />
-        <div style={styles.tableSkeleton} />
-      </section>
-      <section style={styles.bottomRow}>
-        <div style={styles.textSkeleton} />
-        <div style={styles.textSkeleton} />
-      </section>
-    </>
   );
 }
 
@@ -98,16 +81,23 @@ const styles = {
   headerRight: {
     textAlign: 'center' as const,
   },
-  h1: {
-    fontSize: '18px',
-    fontWeight: 600,
-    color: '#e2e8f0',
-    margin: '0 0 4px 0',
+  titleSkeleton: {
+    width: '200px',
+    height: '18px',
+    background: 'linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%)',
+    backgroundSize: '200% 100%',
+    borderRadius: '4px',
+    animation: 'shimmer 1.5s infinite',
+    margin: '0 auto 4px',
   },
-  subtitle: {
-    fontSize: '11px',
-    color: '#475569',
-    letterSpacing: '0.05em',
+  subtitleSkeleton: {
+    width: '280px',
+    height: '11px',
+    background: 'linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%)',
+    backgroundSize: '200% 100%',
+    borderRadius: '4px',
+    animation: 'shimmer 1.5s infinite',
+    margin: '0 auto',
   },
   metricsRow: {
     display: 'grid',

@@ -1,4 +1,4 @@
-import { fetchHoldings, fetchPrices, fetchBenchmark, fetchConstraints } from './data';
+import { fetchHoldings, fetchPrices, fetchBenchmark, fetchConstraints, resetCache } from './data';
 
 const BASE_URL = 'https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com/portfolio-optimisation/2026-04';
 
@@ -9,6 +9,7 @@ describe('fetchHoldings', () => {
   ];
 
   beforeEach(() => {
+    resetCache();
     global.fetch = jest.fn();
   });
 
@@ -24,7 +25,7 @@ describe('fetchHoldings', () => {
 
     const result = await fetchHoldings();
 
-    expect(global.fetch).toHaveBeenCalledWith(`${BASE_URL}/holdings.json`);
+    expect(global.fetch).toHaveBeenCalledWith(`${BASE_URL}/holdings.json`, expect.any(Object));
     expect(result).toEqual(mockHoldings);
   });
 
@@ -172,6 +173,7 @@ describe('fetchPrices', () => {
   ];
 
   beforeEach(() => {
+    resetCache();
     global.fetch = jest.fn();
   });
 
@@ -332,6 +334,7 @@ describe('fetchBenchmark', () => {
   ];
 
   beforeEach(() => {
+    resetCache();
     global.fetch = jest.fn();
   });
 
@@ -348,7 +351,8 @@ describe('fetchBenchmark', () => {
     const result = await fetchBenchmark();
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com/portfolio-optimisation/2026-04/benchmark.json'
+      'https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com/portfolio-optimisation/2026-04/benchmark.json',
+      expect.any(Object)
     );
     expect(result).toEqual(mockBenchmark);
   });
@@ -474,6 +478,7 @@ describe('fetchConstraints', () => {
   };
 
   beforeEach(() => {
+    resetCache();
     global.fetch = jest.fn();
   });
 
@@ -489,7 +494,7 @@ describe('fetchConstraints', () => {
 
     const result = await fetchConstraints();
 
-    expect(global.fetch).toHaveBeenCalledWith(`${BASE_URL}/constraints.json`);
+    expect(global.fetch).toHaveBeenCalledWith(`${BASE_URL}/constraints.json`, expect.any(Object));
     expect(result).toEqual(mockConstraints);
   });
 

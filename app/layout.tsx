@@ -13,6 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com" />
+        <link rel="dns-prefetch" href="https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com" />
+      </head>
       <body>{children}</body>
     </html>
   );

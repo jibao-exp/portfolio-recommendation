@@ -1,11 +1,44 @@
 import type { Holding, PricePoint, BenchmarkPoint, Constraints } from './types';
 
 const BASE_URL = 'https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com/portfolio-optimisation/2026-04';
-const BENCHMARK_URL = 'https://antarctica-hiring-data.s3.eu-west-1.amazonaws.com/portfolio-optimisation/2026-04/benchmark.json';
+
+let dataCache: {
+  holdings: Holding[] | null;
+  prices: PricePoint[] | null;
+  benchmark: BenchmarkPoint[] | null;
+  constraints: Constraints | null;
+  timestamp: number;
+} = {
+  holdings: null,
+  prices: null,
+  benchmark: null,
+  constraints: null,
+  timestamp: 0,
+};
+
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function isCacheValid(): boolean {
+  return Date.now() - dataCache.timestamp < CACHE_TTL_MS;
+}
+
+export function resetCache(): void {
+  dataCache = {
+    holdings: null,
+    prices: null,
+    benchmark: null,
+    constraints: null,
+    timestamp: 0,
+  };
+}
 
 async function safeFetch<T>(url: string, fallback: T): Promise<T> {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: {
+        'Connection': 'keep-alive',
+      },
+    });
     if (!res.ok) {
       console.warn(`[data] Failed to fetch ${url}: ${res.status} ${res.statusText}`);
       return fallback;
@@ -49,6 +82,8 @@ function isValidBenchmarkPoint(item: unknown): item is BenchmarkPoint {
 }
 
 export async function fetchHoldings(): Promise<Holding[]> {
+  if (isCacheValid() && dataCache.holdings !== null) return dataCache.holdings;
+
   const fallback: Holding[] = [];
   const data = await safeFetch<unknown[]>(`${BASE_URL}/holdings.json`, fallback);
   if (!Array.isArray(data)) {
@@ -59,10 +94,14 @@ export async function fetchHoldings(): Promise<Holding[]> {
   if (valid.length !== data.length) {
     console.warn(`[data] Filtered out ${data.length - valid.length} invalid holdings`);
   }
+  dataCache.holdings = valid;
+  dataCache.timestamp = Date.now();
   return valid;
 }
 
 export async function fetchPrices(): Promise<PricePoint[]> {
+  if (isCacheValid() && dataCache.prices !== null) return dataCache.prices;
+
   const fallback: PricePoint[] = [];
   const raw = await safeFetch<unknown[]>(`${BASE_URL}/prices.json`, []);
   if (!Array.isArray(raw)) {
@@ -76,12 +115,16 @@ export async function fetchPrices(): Promise<PricePoint[]> {
   if (valid.length !== raw.length) {
     console.warn(`[data] Filtered out ${raw.length - valid.length} invalid prices`);
   }
+  dataCache.prices = valid;
+  dataCache.timestamp = Date.now();
   return valid;
 }
 
 export async function fetchBenchmark(): Promise<BenchmarkPoint[]> {
+  if (isCacheValid() && dataCache.benchmark !== null) return dataCache.benchmark;
+
   const fallback: BenchmarkPoint[] = [];
-  const data = await safeFetch<unknown[]>(BENCHMARK_URL, fallback);
+  const data = await safeFetch<unknown[]>(`${BASE_URL}/benchmark.json`, fallback);
   if (!Array.isArray(data)) {
     console.warn('[data] Benchmark data is not an array, returning empty');
     return fallback;
@@ -90,10 +133,14 @@ export async function fetchBenchmark(): Promise<BenchmarkPoint[]> {
   if (valid.length !== data.length) {
     console.warn(`[data] Filtered out ${data.length - valid.length} invalid benchmark points`);
   }
+  dataCache.benchmark = valid;
+  dataCache.timestamp = Date.now();
   return valid;
 }
 
 export async function fetchConstraints(): Promise<Constraints> {
+  if (isCacheValid() && dataCache.constraints !== null) return dataCache.constraints;
+
   const fallback: Constraints = {
     min_weight: 0.02,
     max_weight: 0.25,
@@ -118,10 +165,13 @@ export async function fetchConstraints(): Promise<Constraints> {
     return fallback;
   }
 
-  return {
+  const result = {
     min_weight: minWeight,
     max_weight: maxWeight,
     per_asset_class_caps: perAssetClassCaps,
     max_assets: maxAssets,
   };
+  dataCache.constraints = result;
+  dataCache.timestamp = Date.now();
+  return result;
 }
