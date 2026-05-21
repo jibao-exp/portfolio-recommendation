@@ -6,7 +6,6 @@ import {
   annualizedVolatility,
   optimizePortfolio,
   calculatePortfolioMetrics,
-  calculateCurrentPortfolioMetrics,
 } from './optimizer';
 import type { Holding, PricePoint, BenchmarkPoint, Constraints, AssetMetrics } from './types';
 
@@ -661,52 +660,5 @@ describe('calculatePortfolioMetrics', () => {
     expect(result.annualized_volatility).toBe(0);
     expect(result.sharpe_ratio).toBe(0);
     expect(result.max_drawdown).toBe(0);
-  });
-});
-
-describe('calculateCurrentPortfolioMetrics', () => {
-  const makeMetrics = (overrides: Partial<AssetMetrics> = {}): AssetMetrics => ({
-    isin: 'A001',
-    name: 'Asset A',
-    asset_class: 'Equity',
-    currency: 'USD',
-    current_weight: 0.2,
-    recommended_weight: 0.25,
-    annualized_return: 0.10,
-    annualized_volatility: 0.15,
-    sharpe_ratio: 0.4,
-    max_drawdown: 0.05,
-    correlation_with_benchmark: 0.8,
-    price_history: [],
-    ...overrides,
-  });
-
-  it('calculates weighted current portfolio return', () => {
-    const metrics = [
-      makeMetrics({ current_weight: 0.5, annualized_return: 0.10 }),
-      makeMetrics({ isin: 'B001', current_weight: 0.5, annualized_return: 0.06 }),
-    ];
-
-    const result = calculateCurrentPortfolioMetrics(metrics);
-
-    expect(result.annualized_return).toBeCloseTo(0.08);
-  });
-
-  it('calculates current portfolio Sharpe ratio', () => {
-    const metrics = [
-      makeMetrics({ current_weight: 1.0, annualized_return: 0.10, annualized_volatility: 0.15 }),
-    ];
-
-    const result = calculateCurrentPortfolioMetrics(metrics);
-
-    expect(result.sharpe_ratio).toBeCloseTo((0.10 - 0.04) / 0.15, 4);
-  });
-
-  it('handles empty metrics', () => {
-    const result = calculateCurrentPortfolioMetrics([]);
-
-    expect(result.annualized_return).toBe(0);
-    expect(result.annualized_volatility).toBe(0);
-    expect(result.sharpe_ratio).toBe(0);
   });
 });

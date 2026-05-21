@@ -192,29 +192,3 @@ export function calculatePortfolioMetrics(metrics: AssetMetrics[]): PortfolioMet
     total_return: weightedReturn,
   };
 }
-
-export function calculateCurrentPortfolioMetrics(metrics: AssetMetrics[]): PortfolioMetrics {
-  let weightedReturn = 0;
-  let weightedVol = 0;
-
-  for (const m of metrics) {
-    weightedReturn += m.current_weight * m.annualized_return;
-    weightedVol += Math.pow(m.current_weight * m.annualized_volatility, 2);
-  }
-
-  const portfolioVol = Math.sqrt(weightedVol);
-  const portfolioSharpe = portfolioVol > 0 ? (weightedReturn - RISK_FREE_RATE) / portfolioVol : 0;
-
-  let portfolioMaxDD = 0;
-  for (const m of metrics) {
-    portfolioMaxDD += m.current_weight * m.max_drawdown;
-  }
-
-  return {
-    annualized_return: weightedReturn,
-    annualized_volatility: portfolioVol,
-    sharpe_ratio: portfolioSharpe,
-    max_drawdown: portfolioMaxDD,
-    total_return: weightedReturn,
-  };
-}

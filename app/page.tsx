@@ -1,10 +1,4 @@
 import { Suspense } from 'react';
-import MetricCard from '@/components/MetricCard';
-import HistoricalPerformance from '@/components/HistoricalPerformance';
-import WeightRecommendation from '@/components/WeightRecommendation';
-import HoldingsDetail from '@/components/HoldingsDetail';
-import ConstraintChecks from '@/components/ConstraintChecks';
-import Methodology from '@/components/Methodology';
 import PortfolioData from '@/components/PortfolioData';
 
 export const dynamic = 'force-dynamic';
